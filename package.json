@@ -1,0 +1,13 @@
+{
+  "name": "pi-fleet",
+  "version": "0.1.0",
+  "description": "Multi-session quality-of-life extension for Pi tmux fleets",
+  "license": "MIT",
+  "keywords": ["pi-package", "pi", "tmux", "coding-agent"],
+  "pi": {
+    "extensions": ["./extensions"]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  }
+}
