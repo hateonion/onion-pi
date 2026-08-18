@@ -1,8 +1,8 @@
-# pi-fleet
+# onion-pi
 
-Tools for running several Pi sessions: a Pi extension for tmux fleets, plus a Herdr plugin that auto-names agent panes.
+Tools for running several Pi sessions: a Pi extension for tmux fleets (`pi/`), plus a Herdr plugin that auto-names agent panes (`herdr/`).
 
-## Pi extension
+## Pi extension (`pi/`)
 
 Manages several Pi sessions in tmux.
 
@@ -18,7 +18,7 @@ Manages several Pi sessions in tmux.
 ## Install
 
 ```bash
-pi install git:github.com/hateonion/pi-fleet@v0.2.0
+pi install git:github.com/hateonion/onion-pi@v0.3.0
 ```
 
 Restart Pi or run `/reload` after installation.
@@ -26,7 +26,7 @@ Restart Pi or run `/reload` after installation.
 For a temporary test:
 
 ```bash
-pi -e git:github.com/hateonion/pi-fleet@v0.2.0
+pi -e git:github.com/hateonion/onion-pi@v0.3.0
 ```
 
 ## Requirements
@@ -38,16 +38,16 @@ pi -e git:github.com/hateonion/pi-fleet@v0.2.0
 
 Pi extensions run with the installing user's full system permissions. Review the source before installation.
 
-After a session has been idle for four minutes, pi-fleet starts a separate no-tools Pi call to produce a two-line recap. That call receives a truncated excerpt of the last eight messages and uses `opencode-go/deepseek-v4-flash` by default, falling back to `openai-codex/gpt-5.6-luna` if that call fails. Override the model with the `PI_FLEET_RECAP_MODEL` environment variable (single model, no fallback). Disable or modify this behaviour before using pi-fleet in sensitive conversations.
+After a session has been idle for four minutes, onion-pi starts a separate no-tools Pi call to produce a two-line recap. That call receives a truncated excerpt of the last eight messages and uses `opencode-go/deepseek-v4-flash` by default, falling back to `openai-codex/gpt-5.6-luna` if that call fails. Override the model with the `PI_FLEET_RECAP_MODEL` environment variable (single model, no fallback). Disable or modify this behaviour before using onion-pi in sensitive conversations.
 
-## Herdr auto-rename plugin
+## Herdr auto-rename plugin (`herdr/auto-rename/`)
 
 Names an unnamed agent pane from its first user question (Pi) or recent pane output (other agents) once the agent settles. The generated name is short: one to three words.
 
 ### Install
 
 ```bash
-herdr plugin install hateonion/pi-fleet/herdr/auto-rename --ref v0.2.0
+herdr plugin install hateonion/onion-pi/herdr/auto-rename --ref v0.3.0
 ```
 
 ### Model
