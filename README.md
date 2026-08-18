@@ -62,7 +62,7 @@ export HERDR_RENAME_MODEL="openai-codex/gpt-5.6-luna"
 
 Herdr plugins run with the installing user's full system permissions. Review the source before installation.
 
-The plugin sends the first user question (Pi sessions) or the most recent pane output (other agents) to the configured Pi model to generate a title. Do not enable the plugin where pane output must not be sent to that model.
+The plugin sends the first user question (Pi sessions) or the most recent pane output (other agents), plus the agent identifier, the pane's working directory, and the terminal title, to the configured Pi model to generate a title. The working directory can contain a username or project name. That model may be operated by a third-party provider. Do not enable the plugin where pane output or metadata must not be sent to that model.
 
 ## License
 
