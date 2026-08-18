@@ -1,0 +1,13 @@
+id = "local.auto-rename"
+name = "Auto Rename Agent Panes"
+version = "0.1.0"
+min_herdr_version = "0.8.0"
+description = "Generate short agent pane titles with deepseek-v4-flash"
+platforms = ["macos", "linux"]
+
+[[startup]]
+command = ["bash", "rename-pane.sh", "all"]
+
+[[events]]
+on = "pane.agent_status_changed"
+command = ["bash", "rename-pane.sh", "event"]
