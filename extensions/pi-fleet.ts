@@ -9,9 +9,8 @@
  * 4. Idle recap widget: if you don't respond for a while after the agent settles,
  *    an AI recap (out-of-band `pi -p` call — never touches this session's history)
  *    is shown above the editor; falls back to a static recap. The recap model is
- *    the most balanced one the user has auth for (each provider's mid tier:
- *    sonnet, gpt-mini, flash, grok-fast, kimi, deepseek, qwen-plus, glm, mistral,
- *    haiku … else user default); override with PI_FLEET_RECAP_MODEL.
+ *    opencode-go/deepseek-v4-flash, falling back to openai-codex/gpt-5.6-luna if
+ *    the call fails; override with PI_FLEET_RECAP_MODEL.
  * 5. /ref: pick another pi session and insert a pointer (name + transcript path)
  *    into the editor so this session's agent can read it when needed.
  * 6. tmux manual rename: renaming the window (prefix+, / prefix+R) normally sets
@@ -37,8 +36,9 @@ function age(date: Date): string {
 const MAX_WORDS = 6;
 const MAX_CHARS = 40;
 const IDLE_RECAP_MS = Number(process.env.PI_FLEET_RECAP_MS) || 4 * 60 * 1000;
-// Hardcoded recap model
-const RECAP_MODEL = "deepseek/deepseek-v4-flash";
+// Recap models in priority order: fall through the list if a call fails.
+// Override with PI_FLEET_RECAP_MODEL (single model, no fallback).
+const RECAP_MODELS = ["opencode-go/deepseek-v4-flash", "openai-codex/gpt-5.6-luna"];
 
 function summarize(prompt: string): string | undefined {
 	const text = prompt.replace(/\s+/g, " ").trim();
@@ -75,11 +75,11 @@ export default function (pi: ExtensionAPI) {
 	let stopped = false; // ctx is stale after session_shutdown; never touch ctx.ui again
 	let settledAt = 0;
 	let recapGen = 0;
-	let recapModel: string | null | undefined; // undefined = unresolved; null = use pi default
 	const recent: string[] = []; // rolling transcript excerpt for the AI recap
 
-	const resolveRecapModel = (_ctx: ExtensionContext): string => {
-		return process.env.PI_FLEET_RECAP_MODEL || RECAP_MODEL;
+	const recapModels = (): string[] => {
+		const env = process.env.PI_FLEET_RECAP_MODEL;
+		return env ? [env] : RECAP_MODELS;
 	};
 
 	const remember = (role: string, text: string) => {
@@ -182,26 +182,33 @@ export default function (pi: ExtensionAPI) {
 				"You are recapping a paused coding-agent conversation for its returning user. " +
 				"Reply with exactly 2 terse lines, no markdown: line 1 what was just done/discussed; " +
 				`line 2 what the agent is waiting on from the user.\n\nTranscript excerpt:\n${recent.join("\n")}`;
-			const model = resolveRecapModel(ctx);
-			const args = ["-p", "--no-session", "--no-extensions", "--no-skills", "--no-prompt-templates",
-				"--no-context-files", "--no-tools"];
-			if (model) args.push("--model", model);
-			args.push(prompt);
-			const child = execFile(
-				"pi",
-				args,
-				{ timeout: 60000 },
-				(err, stdout) => {
-					if (err || stopped || gen !== recapGen) return; // user came back, session gone, or call failed
-					const lines = stdout.trim().split("\n").filter(Boolean).slice(0, 3);
-					if (lines.length === 0) return;
-					ctx.ui.setWidget("pi-fleet-recap", [
-						dim(`⏸ Recap — waiting for you (${mins}m):`),
-						...lines.map((l) => dim(`  ${l.trim()}`)),
-					]);
-				},
-			);
-			child.stdin?.end();
+			const attempt = (models: string[], index: number) => {
+				const model = models[index];
+				const args = ["-p", "--no-session", "--no-extensions", "--no-skills", "--no-prompt-templates",
+					"--no-context-files", "--no-tools"];
+				if (model) args.push("--model", model);
+				args.push(prompt);
+				const child = execFile(
+					"pi",
+					args,
+					{ timeout: 60000 },
+					(err, stdout) => {
+						if (stopped || gen !== recapGen) return; // user came back or session gone
+						if (err || !stdout.trim()) {
+							if (index + 1 < models.length) attempt(models, index + 1); // try next recap model
+							return;
+						}
+						const lines = stdout.trim().split("\n").filter(Boolean).slice(0, 3);
+						if (lines.length === 0) return;
+						ctx.ui.setWidget("pi-fleet-recap", [
+							dim(`⏸ Recap — waiting for you (${mins}m):`),
+							...lines.map((l) => dim(`  ${l.trim()}`)),
+						]);
+					},
+				);
+				child.stdin?.end();
+			};
+			attempt(recapModels(), 0);
 		}, IDLE_RECAP_MS);
 	});
 
